@@ -34,12 +34,103 @@ export default function App() {
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Animated values for text inputs
+  const emailBorderAnim = useRef(new Animated.Value(0)).current;
+  const emailScaleAnim = useRef(new Animated.Value(1)).current;
+  const passwordBorderAnim = useRef(new Animated.Value(0)).current;
+  const passwordScaleAnim = useRef(new Animated.Value(1)).current;
+  const signUpNameBorderAnim = useRef(new Animated.Value(0)).current;
+  const signUpNameScaleAnim = useRef(new Animated.Value(1)).current;
+  const signUpEmailBorderAnim = useRef(new Animated.Value(0)).current;
+  const signUpEmailScaleAnim = useRef(new Animated.Value(1)).current;
+  const signUpPasswordBorderAnim = useRef(new Animated.Value(0)).current;
+  const signUpPasswordScaleAnim = useRef(new Animated.Value(1)).current;
+  const signUpConfirmPasswordBorderAnim = useRef(new Animated.Value(0)).current;
+  const signUpConfirmPasswordScaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Animation handlers for Sign In
+  const handleEmailFocus = () => {
+    Animated.parallel([
+      Animated.timing(emailBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(emailScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleEmailBlur = () => {
+    Animated.parallel([
+      Animated.timing(emailBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(emailScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handlePasswordFocus = () => {
+    Animated.parallel([
+      Animated.timing(passwordBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(passwordScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handlePasswordBlur = () => {
+    Animated.parallel([
+      Animated.timing(passwordBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(passwordScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
+  // Animation handlers for Sign Up
+  const handleSignUpNameFocus = () => {
+    Animated.parallel([
+      Animated.timing(signUpNameBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpNameScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleSignUpNameBlur = () => {
+    Animated.parallel([
+      Animated.timing(signUpNameBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpNameScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleSignUpEmailFocus = () => {
+    Animated.parallel([
+      Animated.timing(signUpEmailBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpEmailScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleSignUpEmailBlur = () => {
+    Animated.parallel([
+      Animated.timing(signUpEmailBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpEmailScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleSignUpPasswordFocus = () => {
+    Animated.parallel([
+      Animated.timing(signUpPasswordBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpPasswordScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleSignUpPasswordBlur = () => {
+    Animated.parallel([
+      Animated.timing(signUpPasswordBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpPasswordScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleSignUpConfirmPasswordFocus = () => {
+    Animated.parallel([
+      Animated.timing(signUpConfirmPasswordBorderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpConfirmPasswordScaleAnim, { toValue: 1.02, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+  const handleSignUpConfirmPasswordBlur = () => {
+    Animated.parallel([
+      Animated.timing(signUpConfirmPasswordBorderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
+      Animated.spring(signUpConfirmPasswordScaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+  };
+
   const handleSignIn = () => {
     console.log('Sign in pressed', { email, password, rememberMe });
-    // Show welcome message
     setShowWelcome(true);
-    
-    // After 2 seconds, navigate to home
     setTimeout(() => {
       setShowWelcome(false);
       setLoggedIn(true);
@@ -48,11 +139,8 @@ export default function App() {
 
   const handleSignUp = () => {
     console.log('Sign up pressed', { signUpName, signUpEmail, signUpPassword });
-    // Here you would normally handle the sign up logic
-    // For now, just show welcome and log in
     setUserName(signUpName);
     setShowWelcome(true);
-    
     setTimeout(() => {
       setShowWelcome(false);
       setLoggedIn(true);
@@ -61,7 +149,6 @@ export default function App() {
 
   const toggleSignUp = () => {
     setIsSignUp(!isSignUp);
-    // Reset forms when switching
     setEmail('');
     setPassword('');
     setSignUpName('');
@@ -86,18 +173,41 @@ export default function App() {
     console.log('Microsoft sign in pressed');
   };
 
-  // animated scale for checkbox press feedback
   const checkboxScale = useRef(new Animated.Value(1)).current;
   const animateCheckbox = (toValue) => {
     Animated.spring(checkboxScale, { toValue, useNativeDriver: true, friction: 6 }).start();
   };
 
-  // Always show login immediately (no landing screen)
+  // Interpolate border colors
+  const emailBorderColor = emailBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+  const passwordBorderColor = passwordBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+  const signUpNameBorderColor = signUpNameBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+  const signUpEmailBorderColor = signUpEmailBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+  const signUpPasswordBorderColor = signUpPasswordBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+  const signUpConfirmPasswordBorderColor = signUpConfirmPasswordBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#3b82f6'],
+  });
+
   if (loggedIn) {
     return <Home onLogout={() => setLoggedIn(false)} userName={userName} />;
   }
 
-  // Show welcome screen
   if (showWelcome) {
     return (
       <LinearGradient
@@ -125,7 +235,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Left Column - Background Image (70%) */}
+      {/* Left Column - Background Image (80%) */}
       <View style={styles.imageColumn}>
         <Image
           source={require('./assets/carton.jpg')}
@@ -135,7 +245,7 @@ export default function App() {
         />
       </View>
 
-      {/* Right Column - Login/SignUp Container (30%) */}
+      {/* Right Column - Login/SignUp Container (20%) */}
       <LinearGradient
         colors={['#F3E095', '#DACC96', '#999999']}
         locations={[0, 0.28, 1.0]}
@@ -161,30 +271,52 @@ export default function App() {
           {!isSignUp ? (
             // SIGN IN FORM
             <View style={styles.formContainer}>
-              {/* Email Input */}
+              {/* Email Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Login</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email or phone number"
-                  placeholderTextColor="#9ca3af"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+                <Animated.View
+                  style={[
+                    styles.animatedInputWrapper,
+                    {
+                      borderColor: emailBorderColor,
+                      transform: [{ scale: emailScaleAnim }],
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email or phone number"
+                    placeholderTextColor="#9ca3af"
+                    value={email}
+                    onChangeText={setEmail}
+                    onFocus={handleEmailFocus}
+                    onBlur={handleEmailBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </Animated.View>
               </View>
 
-              {/* Password Input */}
+              {/* Password Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
+                <Animated.View
+                  style={[
+                    styles.animatedPasswordWrapper,
+                    {
+                      borderColor: passwordBorderColor,
+                      transform: [{ scale: passwordScaleAnim }],
+                    },
+                  ]}
+                >
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Enter password"
                     placeholderTextColor="#9ca3af"
                     value={password}
                     onChangeText={setPassword}
+                    onFocus={handlePasswordFocus}
+                    onBlur={handlePasswordBlur}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                   />
@@ -198,7 +330,7 @@ export default function App() {
                       color="#6b7280" 
                     />
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               </View>
 
               {/* Remember Me and Forgot Password */}
@@ -286,43 +418,77 @@ export default function App() {
           ) : (
             // SIGN UP FORM
             <View style={styles.formContainer}>
-              {/* Full Name Input */}
+              {/* Full Name Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Full Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor="#9ca3af"
-                  value={signUpName}
-                  onChangeText={setSignUpName}
-                  autoCapitalize="words"
-                />
+                <Animated.View
+                  style={[
+                    styles.animatedInputWrapper,
+                    {
+                      borderColor: signUpNameBorderColor,
+                      transform: [{ scale: signUpNameScaleAnim }],
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#9ca3af"
+                    value={signUpName}
+                    onChangeText={setSignUpName}
+                    onFocus={handleSignUpNameFocus}
+                    onBlur={handleSignUpNameBlur}
+                    autoCapitalize="words"
+                  />
+                </Animated.View>
               </View>
 
-              {/* Email Input */}
+              {/* Email Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#9ca3af"
-                  value={signUpEmail}
-                  onChangeText={setSignUpEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+                <Animated.View
+                  style={[
+                    styles.animatedInputWrapper,
+                    {
+                      borderColor: signUpEmailBorderColor,
+                      transform: [{ scale: signUpEmailScaleAnim }],
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email"
+                    placeholderTextColor="#9ca3af"
+                    value={signUpEmail}
+                    onChangeText={setSignUpEmail}
+                    onFocus={handleSignUpEmailFocus}
+                    onBlur={handleSignUpEmailBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </Animated.View>
               </View>
 
-              {/* Password Input */}
+              {/* Password Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
+                <Animated.View
+                  style={[
+                    styles.animatedPasswordWrapper,
+                    {
+                      borderColor: signUpPasswordBorderColor,
+                      transform: [{ scale: signUpPasswordScaleAnim }],
+                    },
+                  ]}
+                >
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Create password"
                     placeholderTextColor="#9ca3af"
                     value={signUpPassword}
                     onChangeText={setSignUpPassword}
+                    onFocus={handleSignUpPasswordFocus}
+                    onBlur={handleSignUpPasswordBlur}
                     secureTextEntry={!showSignUpPassword}
                     autoCapitalize="none"
                   />
@@ -336,19 +502,29 @@ export default function App() {
                       color="#6b7280" 
                     />
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               </View>
 
-              {/* Confirm Password Input */}
+              {/* Confirm Password Input with Animation */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Confirm Password</Text>
-                <View style={styles.passwordContainer}>
+                <Animated.View
+                  style={[
+                    styles.animatedPasswordWrapper,
+                    {
+                      borderColor: signUpConfirmPasswordBorderColor,
+                      transform: [{ scale: signUpConfirmPasswordScaleAnim }],
+                    },
+                  ]}
+                >
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Confirm your password"
                     placeholderTextColor="#9ca3af"
                     value={signUpConfirmPassword}
                     onChangeText={setSignUpConfirmPassword}
+                    onFocus={handleSignUpConfirmPasswordFocus}
+                    onBlur={handleSignUpConfirmPasswordBlur}
                     secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                   />
@@ -362,7 +538,7 @@ export default function App() {
                       color="#6b7280" 
                     />
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               </View>
 
               {/* Sign Up Button */}
@@ -450,19 +626,23 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     marginBottom: 6,
   },
-  input: {
+  animatedInputWrapper: {
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
+    borderWidth: 2,
+  },
+  input: {
     padding: 12,
     fontSize: 14,
     color: '#1f2937',
+    backgroundColor: 'transparent',
   },
-  passwordContainer: {
+  animatedPasswordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
-    position: 'relative',
+    borderWidth: 2,
   },
   passwordInput: {
     flex: 1,

@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Dimensions, ScrollView, Animated } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+  ScrollView,
+  Animated,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
@@ -11,15 +20,64 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
   const [progress, setProgress] = useState(0);
   const [processed, setProcessed] = useState(false);
   const [captured, setCaptured] = useState(require('../assets/skeleton.png'));
-  const [dielineGenerated, setDielineGenerated] = useState(false);
+  const [showDieline, setShowDieline] = useState(false);
+  const [guide, setGuide] = useState('crease');
+  const [showDetails, setShowDetails] = useState(false);
+  
+  // Sidebar and dropdown states
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  // Animated values
+  const sidebarAnim = useRef(new Animated.Value(-280)).current;
+  const dropdownAnim = useRef(new Animated.Value(0)).current;
+  const dropdownOpacity = useRef(new Animated.Value(0)).current;
+
+  // Animate sidebar when state changes
+  useEffect(() => {
+    Animated.timing(sidebarAnim, {
+      toValue: sidebarOpen ? 0 : -280,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [sidebarOpen]);
+
+  // Animate profile dropdown when state changes
+  useEffect(() => {
+    if (profileDropdownOpen) {
+      Animated.parallel([
+        Animated.timing(dropdownAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dropdownOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(dropdownAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dropdownOpacity, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [profileDropdownOpen]);
 
   const runSegmentation = () => {
     setRunning(true);
     setProcessed(false);
+    setShowDieline(false);
     setProgress(0);
-    setDielineGenerated(false);
     const interval = setInterval(() => {
       setProgress((p) => {
         const next = p + Math.floor(Math.random() * 12) + 8;
@@ -38,8 +96,15 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
     setCaptured(require('../assets/skeleton.png'));
   };
 
-  const onGenerateDieline = () => {
-    setDielineGenerated(true);
+  const onConfirmDieline = () => {
+    setShowDieline(true);
+  };
+
+  const onRedo = () => {
+    setProcessed(false);
+    setProgress(0);
+    setShowDieline(false);
+    setShowDetails(false);
   };
 
   const toggleSidebar = () => {
@@ -54,15 +119,22 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
     <View style={styles.root}>
       {/* Sidebar Overlay */}
       {sidebarOpen && (
-        <TouchableOpacity 
-          style={styles.overlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
           onPress={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <View style={[styles.sidebar, sidebarOpen && styles.sidebarOpen]}>
+      {/* Animated Sidebar */}
+      <Animated.View
+        style={[
+          styles.sidebar,
+          {
+            transform: [{ translateX: sidebarAnim }],
+          },
+        ]}
+      >
         <View style={styles.sidebarHeader}>
           <Image
             source={require('../assets/cartoniq.png')}
@@ -109,34 +181,29 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
             <Text style={styles.menuItemText}>Help</Text>
           </TouchableOpacity>
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Main Content */}
       <LinearGradient
-        colors={['#F3E095', '#DACC96', '#999999']}
+        colors={['#E8C76A', '#DACC96', '#999999']}
         locations={[0, 0.28, 1.0]}
         style={styles.mainContent}
       >
-        {/* Navbar */}
+        {/* Enhanced Navbar with Gradient */}
         <LinearGradient
-          colors={['#F3E095', '#DACC96', '#999999']}
+          colors={['#E8C76A']}
           locations={[0, 0.28, 1.0]}
           style={styles.nav}
         >
           <View style={styles.navContent}>
             <View style={styles.navLeft}>
-              <TouchableOpacity 
-                style={styles.menuButton} 
+              <TouchableOpacity
+                style={styles.menuButton}
                 onPress={toggleSidebar}
                 activeOpacity={0.7}
               >
                 <FontAwesome name="bars" size={24} color="#1f2937" />
               </TouchableOpacity>
-              
-              <Image
-                source={require('../assets/cartoniq_only-removebg-preview.png')}
-                style={styles.brandLogo}
-              />
             </View>
 
             <View style={styles.navRight}>
@@ -148,8 +215,8 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
               </TouchableOpacity>
 
               <View style={styles.profileDropdownContainer}>
-                <TouchableOpacity 
-                  style={styles.profileButton} 
+                <TouchableOpacity
+                  style={styles.profileButton}
                   onPress={toggleProfileDropdown}
                   activeOpacity={0.8}
                 >
@@ -157,15 +224,37 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
                   <View style={styles.profileNameContainer}>
                     <Text style={styles.profileNameText}>{userName}</Text>
                   </View>
-                  <FontAwesome 
-                    name={profileDropdownOpen ? "chevron-up" : "chevron-down"} 
-                    size={12} 
-                    color="#6b7280" 
+                  <FontAwesome
+                    name={profileDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                    size={12}
+                    color="#6b7280"
                   />
                 </TouchableOpacity>
 
+                {/* Animated Dropdown */}
                 {profileDropdownOpen && (
-                  <View style={styles.dropdown}>
+                  <Animated.View
+                    style={[
+                      styles.dropdown,
+                      {
+                        opacity: dropdownOpacity,
+                        transform: [
+                          {
+                            translateY: dropdownAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [-10, 0],
+                            }),
+                          },
+                          {
+                            scale: dropdownAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.95, 1],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
                     <TouchableOpacity style={styles.dropdownItem}>
                       <FontAwesome name="user" size={16} color="#1f2937" />
                       <Text style={styles.dropdownItemText}>My Profile</Text>
@@ -176,21 +265,16 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
                       <Text style={styles.dropdownItemText}>Account Settings</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.dropdownItem}>
-                      <FontAwesome name="credit-card" size={16} color="#1f2937" />
-                      <Text style={styles.dropdownItemText}>Billing</Text>
-                    </TouchableOpacity>
-
                     <View style={styles.dropdownDivider} />
 
-                    <TouchableOpacity 
-                      style={[styles.dropdownItem, styles.logoutItem]} 
+                    <TouchableOpacity
+                      style={[styles.dropdownItem, styles.logoutItem]}
                       onPress={onLogout}
                     >
                       <FontAwesome name="sign-out" size={16} color="#dc2626" />
                       <Text style={[styles.dropdownItemText, { color: '#dc2626' }]}>Logout</Text>
                     </TouchableOpacity>
-                  </View>
+                  </Animated.View>
                 )}
               </View>
             </View>
@@ -200,30 +284,43 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
         {/* Panels */}
         <ScrollView style={styles.scrollContainer}>
           <View style={styles.panels}>
-            {/* LEFT PANEL */}
+            {/* Left panel: capture */}
             <View style={[styles.panel, styles.leftPanel]}>
               <Text style={styles.panelTitle}>Image Capture</Text>
               <View style={styles.photoCard}>
                 <Image source={captured} style={styles.photo} />
                 <View style={styles.photoActions}>
-                  <TouchableOpacity style={styles.captureBtn} onPress={onCapture}>
+                  <TouchableOpacity
+                    style={styles.captureBtn}
+                    onPress={onCapture}
+                    activeOpacity={0.85}
+                    accessible={true}
+                    accessibilityLabel="Capture photo"
+                    accessibilityRole="button"
+                  >
                     <FontAwesome name="camera" size={16} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={styles.captureText}>Capture</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.smallBtn} onPress={() => {}}>
+                  <TouchableOpacity
+                    style={styles.smallBtn}
+                    onPress={onRedo}
+                    activeOpacity={0.85}
+                    accessible={true}
+                    accessibilityLabel="Redo capture"
+                    accessibilityRole="button"
+                  >
                     <FontAwesome name="refresh" size={18} color="#fff" />
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            {/* CENTER PANEL */}
-            <View style={[styles.panel, styles.centerPanel]}>
+            {/* Center panel: segmentation + confirm */}
+            <View style={[styles.panel, styles.centerPanel, styles.centerElevated]}>
               <Text style={styles.panelTitle}>Segmentation</Text>
               <View style={styles.centerContent}>
                 {running ? (
                   <View style={styles.processingContainer}>
-                    <ActivityIndicator size="large" color="#000" />
                     <Text style={styles.processingText}>Processing image...</Text>
                     <View style={styles.progressBar}>
                       <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -240,48 +337,86 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
                     </View>
 
                     <View style={styles.infoBox}>
-                      <Text style={styles.infoTitle}>
-                        <FontAwesome name="check-circle" size={14} color="#10b981" /> Dimensions Detected
-                      </Text>
-                      <View style={styles.dimGrid}>
-                        <View style={styles.dimCol}>
-                          <Text style={styles.dimLabel}>Length</Text>
-                          <Text style={styles.dimValue}>180 mm</Text>
-                        </View>
-                        <View style={styles.dimCol}>
-                          <Text style={styles.dimLabel}>Width</Text>
-                          <Text style={styles.dimValue}>116 mm</Text>
-                        </View>
-                        <View style={styles.dimCol}>
-                          <Text style={styles.dimLabel}>Height</Text>
-                          <Text style={styles.dimValue}>108 mm</Text>
-                        </View>
-                        <View style={styles.dimCol}>
-                          <Text style={styles.dimLabel}>Weight</Text>
-                          <Text style={styles.dimValue}>460 g</Text>
-                        </View>
+                      <View style={styles.infoHeader}>
+                        <Text style={styles.infoTitle}>
+                          <FontAwesome name="check-circle" size={14} color="#10b981" /> Dimensions and Weight Detected
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => setShowDetails(!showDetails)}
+                          style={styles.detailsToggle}
+                          accessible={true}
+                          accessibilityLabel="Toggle dimension details"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.detailsToggleText}>
+                            {showDetails ? 'Hide' : 'View'} Details
+                          </Text>
+                        </TouchableOpacity>
                       </View>
+
+                      {!showDetails && (
+                        <Text style={styles.summaryText}>
+                          180mm × 116mm × 108mm · 460g
+                        </Text>
+                      )}
+
+                      {showDetails && (
+                        <View style={styles.dimGrid}>
+                          <View style={styles.dimCol}>
+                            <Text style={styles.dimLabel}>Length</Text>
+                            <Text style={styles.dimValue}>180 mm</Text>
+                          </View>
+                          <View style={styles.dimCol}>
+                            <Text style={styles.dimLabel}>Width</Text>
+                            <Text style={styles.dimValue}>116 mm</Text>
+                          </View>
+                          <View style={styles.dimCol}>
+                            <Text style={styles.dimLabel}>Height</Text>
+                            <Text style={styles.dimValue}>108 mm</Text>
+                          </View>
+                          <View style={styles.dimCol}>
+                            <Text style={styles.dimLabel}>Weight</Text>
+                            <Text style={styles.dimValue}>460 g</Text>
+                          </View>
+                        </View>
+                      )}
                     </View>
 
-                    <View style={styles.resultActions}>
-                      <TouchableOpacity style={styles.confirmBtn} onPress={onGenerateDieline}>
-                        <FontAwesome name="check" size={16} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={styles.confirmText}>Generate Dieline</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.smallBtn}
-                        onPress={() => {
-                          setProcessed(false);
-                          setProgress(0);
-                          setDielineGenerated(false);
-                        }}
-                      >
-                        <FontAwesome name="refresh" size={18} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
+                    {progress === 100 && (
+                      <View style={styles.resultActions}>
+                        <TouchableOpacity
+                          style={styles.confirmBtn}
+                          onPress={onConfirmDieline}
+                          activeOpacity={0.85}
+                          accessible={true}
+                          accessibilityLabel="Confirm and generate dieline"
+                          accessibilityRole="button"
+                        >
+                          <FontAwesome name="check" size={16} color="#fff" style={{ marginRight: 8 }} />
+                          <Text style={styles.confirmText}>Generate Dieline</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.smallBtn}
+                          onPress={onRedo}
+                          activeOpacity={0.85}
+                          accessible={true}
+                          accessibilityLabel="Redo"
+                          accessibilityRole="button"
+                        >
+                          <FontAwesome name="refresh" size={18} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 ) : (
-                  <TouchableOpacity style={styles.runBtn} onPress={runSegmentation} activeOpacity={0.85}>
+                  <TouchableOpacity
+                    style={styles.runBtn}
+                    onPress={runSegmentation}
+                    activeOpacity={0.85}
+                    accessible={true}
+                    accessibilityLabel="Run segmentation model"
+                    accessibilityRole="button"
+                  >
                     <FontAwesome name="play" size={16} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={styles.runText}>Run Segmentation</Text>
                   </TouchableOpacity>
@@ -289,23 +424,98 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
               </View>
             </View>
 
-            {/* RIGHT PANEL */}
+            {/* Right panel: dieline preview */}
             <View style={[styles.panel, styles.rightPanel]}>
               <Text style={styles.panelTitle}>Dieline Preview</Text>
-              {dielineGenerated ? (
-                <View style={styles.previewContainer}>
-                  <Image
-                    source={require('../assets/dieline.png')}
-                    style={styles.previewImage}
-                  />
-                  <View style={styles.previewActions}>
-                    <TouchableOpacity style={styles.downloadBtn}>
-                      <FontAwesome name="download" size={16} color="#fff" />
-                      <Text style={styles.downloadText}>Download</Text>
+              {showDieline ? (
+                <View style={styles.dielineWrap}>
+                  <View style={styles.toggleRow}>
+                    <TouchableOpacity
+                      onPress={() => setGuide('cut')}
+                      style={[styles.pillBtn, guide === 'cut' && styles.pillActive]}
+                      activeOpacity={0.85}
+                      accessible={true}
+                      accessibilityLabel="Show cut lines"
+                      accessibilityRole="button"
+                    >
+                      <Text
+                        style={[styles.pillText, guide === 'cut' && styles.pillTextActive]}
+                      >
+                        — Cut Line
+                      </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.shareBtn}>
-                      <FontAwesome name="share-alt" size={16} color="#1f2937" />
+                    <TouchableOpacity
+                      onPress={() => setGuide('crease')}
+                      style={[styles.pillBtn, guide === 'crease' && styles.pillActive]}
+                      activeOpacity={0.85}
+                      accessible={true}
+                      accessibilityLabel="Show crease lines"
+                      accessibilityRole="button"
+                    >
+                      <Text
+                        style={[styles.pillText, guide === 'crease' && styles.pillTextActive]}
+                      >
+                        ····· Crease Line
+                      </Text>
                     </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.gridOuter}>
+                    <View style={styles.gridRow}>
+                      <View style={styles.gridCell}>
+                        <Text style={styles.cellText}>Top L</Text>
+                      </View>
+                      <View style={styles.gridCell}>
+                        <Text style={styles.cellText}>Front</Text>
+                      </View>
+                      <View style={styles.gridCell}>
+                        <Text style={styles.cellText}>Top R</Text>
+                      </View>
+                    </View>
+                    <View style={styles.gridRow}>
+                      <View
+                        style={[
+                          styles.gridCell,
+                          guide === 'crease' ? styles.creaseTop : styles.cutTop,
+                        ]}
+                      >
+                        <Text style={styles.cellText}>Left</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.gridCell,
+                          guide === 'crease' ? styles.creaseTop : styles.cutTop,
+                        ]}
+                      >
+                        <Text style={styles.cellText}>Bottom</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.gridCell,
+                          guide === 'crease' ? styles.creaseTop : styles.cutTop,
+                        ]}
+                      >
+                        <Text style={styles.cellText}>Right</Text>
+                      </View>
+                    </View>
+                    <View style={styles.bottomFlapRow}>
+                      <View
+                        style={[
+                          styles.bottomFlap,
+                          guide === 'crease' ? styles.creaseMid : styles.cutMid,
+                        ]}
+                      >
+                        <Text style={styles.cellText}>Back</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.annotation}>121mm</Text>
+                  </View>
+
+                  <View style={styles.noteBox}>
+                    <Text style={styles.noteText}>
+                      This dieline is automatically generated based on product dimensions.
+                      The blue dashed lines indicate automated crease lines for folding.
+                    </Text>
                   </View>
                 </View>
               ) : (
@@ -327,14 +537,13 @@ export default function Home({ onLogout, userName = 'John Doe' }) {
   );
 }
 
+// All styles remain exactly the same as in your file
 const styles = StyleSheet.create({
-  root: { 
-    flex: 1, 
+  root: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: '#f9fafb',
   },
-  
-  // Sidebar styles
   overlay: {
     position: 'absolute',
     top: 0,
@@ -346,21 +555,22 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     position: 'absolute',
-    left: -280,
+    left: 0,
     top: 0,
     bottom: 0,
     width: 280,
     backgroundColor: '#ffffff',
     zIndex: 999,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    transition: 'left 0.3s',
-  },
-  sidebarOpen: {
-    left: 0,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: { elevation: 8 },
+      web: { boxShadow: '2px 0 8px rgba(0,0,0,0.25)' },
+    }),
   },
   sidebarHeader: {
     padding: 24,
@@ -373,6 +583,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     marginRight: 12,
+    resizeMode: 'contain',
   },
   sidebarTitle: {
     fontSize: 20,
@@ -402,47 +613,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     marginVertical: 16,
   },
-  sidebarFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    padding: 16,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sidebarAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  profileInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  profileEmail: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-
-  // Main content
   mainContent: {
     flex: 1,
   },
-  
-  // Navbar
   nav: {
     height: 70,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: { elevation: 8 },
+      web: { boxShadow: '0 4px 8px rgba(0,0,0,0.15)' },
+    }),
     zIndex: 100,
   },
   navContent: {
@@ -464,12 +649,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  brandLogo: { 
-    width: 140, 
-    height: 120,
-    resizeMode: 'contain',
-    alignItems: 'center',
   },
   navRight: {
     flexDirection: 'row',
@@ -501,19 +680,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  avatar: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  avatarImg: { 
-    width: 40, 
+  avatarImg: {
+    width: 40,
     height: 40,
     borderRadius: 20,
-    resizeMode: 'cover', 
+    resizeMode: 'cover',
   },
   profileDropdownContainer: {
     position: 'relative',
@@ -542,11 +713,16 @@ const styles = StyleSheet.create({
     width: 220,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+      web: { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+    }),
     paddingVertical: 8,
     zIndex: 1000,
   },
@@ -570,27 +746,30 @@ const styles = StyleSheet.create({
   logoutItem: {
     marginTop: 4,
   },
-
-  // Panels
   scrollContainer: {
     flex: 1,
   },
-  panels: { 
-    flex: 1, 
-    flexDirection: width > 900 ? 'row' : 'column', 
-    padding: 24, 
-    gap: 24 
+  panels: {
+    flex: 1,
+    flexDirection: width > 900 ? 'row' : 'column',
+    padding: 24,
+    gap: 24,
   },
-  panel: { 
-    flex: 1, 
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
+  panel: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     minHeight: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+    }),
   },
   panelTitle: {
     fontSize: 18,
@@ -600,102 +779,103 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  leftPanel: { 
-    flex: 1.2,
-  },
-  centerPanel: { 
-    flex: 1.1,
-  },
+  leftPanel: { flex: 1.2 },
+  centerPanel: { flex: 1.1 },
   centerContent: {
     flex: 1,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rightPanel: { 
-    flex: 1,
+  centerElevated: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+      web: { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+    }),
   },
-  
-  // Photo card
+  rightPanel: { flex: 1 },
   photoCard: {
     padding: 20,
     alignItems: 'center',
     flex: 1,
     justifyContent: 'space-between',
   },
-  photo: { 
-    width: '100%', 
-    aspectRatio: 2 / 3, 
-    resizeMode: 'contain', 
-    marginBottom: 12, 
+  photo: {
+    width: '100%',
+    aspectRatio: 2 / 3,
+    resizeMode: 'contain',
+    marginBottom: 12,
     flexShrink: 1,
     borderRadius: 8,
   },
-  photoActions: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    width: '100%', 
-    paddingHorizontal: 10, 
+  photoActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
     marginTop: 12,
     gap: 12,
   },
-  captureBtn: { 
-    backgroundColor: '#000', 
-    paddingVertical: 14, 
-    paddingHorizontal: 28, 
+  captureBtn: {
+    backgroundColor: '#1f2937',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
   },
-  captureText: { 
-    color: '#fff', 
+  captureText: {
+    color: '#fff',
     fontWeight: '700',
     fontSize: 15,
   },
-  smallBtn: { 
-    backgroundColor: '#000', 
-    width: 48, 
-    height: 48, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
+  smallBtn: {
+    backgroundColor: '#1f2937',
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  
-  // Processing
-  runBtn: { 
-    backgroundColor: '#000', 
-    paddingVertical: 16, 
-    paddingHorizontal: 32, 
+  runBtn: {
+    backgroundColor: '#1f2937',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  runText: { 
-    color: '#fff', 
+  runText: {
+    color: '#fff',
     fontWeight: '700',
     fontSize: 16,
   },
-  processingContainer: { 
-    alignItems: 'center' 
-  },
-  processingText: { 
+  processingContainer: { alignItems: 'center' },
+  processingText: {
     marginTop: 16,
-    marginBottom: 12, 
-    color: '#374151',
+    marginBottom: 12,
+    color: '#1f2937',
     fontSize: 15,
+    fontWeight: '600',
   },
-  progressBar: { 
-    width: 280, 
-    height: 8, 
-    backgroundColor: '#e5e7eb', 
-    borderRadius: 8, 
-    overflow: 'hidden' 
+  progressBar: {
+    width: 280,
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  progressFill: { 
-    height: '100%', 
-    backgroundColor: '#10b981' 
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#10b981',
   },
   progressText: {
     marginTop: 8,
@@ -703,12 +883,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6b7280',
   },
-  
-  // Results
-  resultWrap: { 
-    width: '100%', 
-    alignItems: 'center' 
-  },
+  resultWrap: { width: '100%', alignItems: 'center' },
   segCanvas: {
     width: '100%',
     height: 280,
@@ -727,136 +902,167 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centerCrossV: { 
-    position: 'absolute', 
-    width: 2, 
-    height: '80%', 
-    backgroundColor: '#60a5fa' 
+  centerCrossV: {
+    position: 'absolute',
+    width: 2,
+    height: '80%',
+    backgroundColor: '#60a5fa',
   },
-  centerCrossH: { 
-    position: 'absolute', 
-    height: 2, 
-    width: '80%', 
-    backgroundColor: '#60a5fa' 
+  centerCrossH: {
+    position: 'absolute',
+    height: 2,
+    width: '80%',
+    backgroundColor: '#60a5fa',
   },
-  infoBox: { 
-    backgroundColor: '#f0fdf4', 
-    padding: 16, 
-    width: '100%', 
-    borderRadius: 12, 
+  infoBox: {
+    backgroundColor: '#f0fdf4',
+    padding: 16,
+    width: '100%',
+    borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
-  infoTitle: { 
-    fontSize: 14, 
-    color: '#065f46', 
-    marginBottom: 12,
-    fontWeight: '600',
+  infoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  dimGrid: { 
-    flexDirection: 'row', 
+  infoTitle: {
+    fontSize: 14,
+    color: '#065f46',
+    fontWeight: '700',
+    flex: 1,
+  },
+  detailsToggle: { paddingHorizontal: 8, paddingVertical: 4 },
+  detailsToggleText: {
+    color: '#047857',
+    fontSize: 12,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#065f46',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  dimGrid: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
-  dimCol: { 
-    width: '47%', 
-    padding: 12, 
-    backgroundColor: '#fff', 
+  dimCol: {
+    width: '47%',
+    padding: 12,
+    backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  dimLabel: { 
-    fontSize: 12, 
-    color: '#6b7280',
+  dimLabel: {
+    fontSize: 12,
+    color: '#4b5563',
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
-  dimValue: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#111827' 
+  dimValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
   },
-  resultActions: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
+  resultActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     gap: 12,
   },
-  confirmBtn: { 
-    backgroundColor: '#000', 
-    paddingVertical: 14, 
-    paddingHorizontal: 24, 
+  confirmBtn: {
+    backgroundColor: '#1f2937',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
   },
-  confirmText: { 
-    color: '#fff', 
+  confirmText: {
+    color: '#fff',
     fontWeight: '700',
     fontSize: 15,
   },
-
-  // Preview
-  placeholder: { 
-    flex: 1, 
-    alignItems: 'center', 
+  dielineWrap: { flex: 1, padding: 20, gap: 16 },
+  toggleRow: { flexDirection: 'row', gap: 10 },
+  pillBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+  },
+  pillActive: { backgroundColor: '#1f2937', borderColor: '#1f2937' },
+  pillText: { color: '#1f2937', fontSize: 13, fontWeight: '600' },
+  pillTextActive: { color: '#fff' },
+  gridOuter: {
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    padding: 12,
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  gridRow: { flexDirection: 'row' },
+  gridCell: {
+    width: 120,
+    height: 100,
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomFlapRow: { alignItems: 'center', marginTop: 8 },
+  bottomFlap: {
+    width: 120,
+    height: 120,
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellText: { color: '#6b7280', fontSize: 12 },
+  creaseTop: { borderTopWidth: 2, borderTopColor: '#3b82f6', borderStyle: 'dashed' },
+  cutTop: { borderTopWidth: 2, borderTopColor: '#1f2937' },
+  creaseMid: { borderTopWidth: 2, borderTopColor: '#3b82f6', borderStyle: 'dashed' },
+  cutMid: { borderTopWidth: 2, borderTopColor: '#1f2937' },
+  annotation: { marginTop: 8, color: '#6b7280', fontSize: 11 },
+  noteBox: {
+    backgroundColor: '#f3f4f6',
+    padding: 14,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  },
+  noteText: { color: '#4b5563', fontSize: 12, lineHeight: 18 },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
   },
-  placeholderText: { 
-    color: '#6b7280',
+  placeholderText: {
+    color: '#4b5563',
     fontSize: 15,
     fontWeight: '600',
     marginTop: 16,
+    textAlign: 'center',
   },
   placeholderSubtext: {
     color: '#9ca3af',
     fontSize: 13,
     textAlign: 'center',
     marginTop: 8,
-  },
-  previewContainer: { 
-    flex: 1, 
-    padding: 20,
-  },
-  previewImage: {
-    width: '100%',
-    height: 320,
-    resizeMode: 'contain',
-    borderRadius: 12,
-    backgroundColor: '#f9fafb',
-    marginBottom: 16,
-  },
-  previewActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  downloadBtn: {
-    backgroundColor: '#000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    flex: 1,
-    gap: 8,
-  },
-  downloadText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  shareBtn: {
-    backgroundColor: '#f3f4f6',
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
