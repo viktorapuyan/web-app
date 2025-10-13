@@ -22,11 +22,52 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [userName, setUserName] = useState('John Doe');
+  const [isSignUp, setIsSignUp] = useState(false);
+  
+  // Sign up form states
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignIn = () => {
     console.log('Sign in pressed', { email, password, rememberMe });
-    // for now, just toggle logged in state
-    setLoggedIn(true);
+    // Show welcome message
+    setShowWelcome(true);
+    
+    // After 2 seconds, navigate to home
+    setTimeout(() => {
+      setShowWelcome(false);
+      setLoggedIn(true);
+    }, 2000);
+  };
+
+  const handleSignUp = () => {
+    console.log('Sign up pressed', { signUpName, signUpEmail, signUpPassword });
+    // Here you would normally handle the sign up logic
+    // For now, just show welcome and log in
+    setUserName(signUpName);
+    setShowWelcome(true);
+    
+    setTimeout(() => {
+      setShowWelcome(false);
+      setLoggedIn(true);
+    }, 2000);
+  };
+
+  const toggleSignUp = () => {
+    setIsSignUp(!isSignUp);
+    // Reset forms when switching
+    setEmail('');
+    setPassword('');
+    setSignUpName('');
+    setSignUpEmail('');
+    setSignUpPassword('');
+    setSignUpConfirmPassword('');
   };
 
   const handleGoogleSignIn = () => {
@@ -53,7 +94,33 @@ export default function App() {
 
   // Always show login immediately (no landing screen)
   if (loggedIn) {
-    return <Home onLogout={() => setLoggedIn(false)} />;
+    return <Home onLogout={() => setLoggedIn(false)} userName={userName} />;
+  }
+
+  // Show welcome screen
+  if (showWelcome) {
+    return (
+      <LinearGradient
+        colors={['#F3E095', '#DACC96', '#999999']}
+        locations={[0, 0.28, 1.0]}
+        style={styles.welcomeScreen}
+      >
+        <View style={styles.welcomeContent}>
+          <Image
+            source={require('./assets/cartoniq.png')}
+            style={styles.welcomeLogo}
+            contentFit="contain"
+          />
+          <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+          <Text style={styles.welcomeSubtitle}>{userName}</Text>
+          <View style={styles.loadingContainer}>
+            <View style={styles.loadingDot} />
+            <View style={[styles.loadingDot, styles.loadingDotDelay1]} />
+            <View style={[styles.loadingDot, styles.loadingDotDelay2]} />
+          </View>
+        </View>
+      </LinearGradient>
+    );
   }
 
   return (
@@ -68,7 +135,7 @@ export default function App() {
         />
       </View>
 
-      {/* Right Column - Login Container (30%) */}
+      {/* Right Column - Login/SignUp Container (30%) */}
       <LinearGradient
         colors={['#F3E095', '#DACC96', '#999999']}
         locations={[0, 0.28, 1.0]}
@@ -86,140 +153,239 @@ export default function App() {
           </View>
 
           {/* Welcome Text */}
-          <Text style={styles.welcomeText}>Welcome to CartonIQ</Text>
+          <Text style={styles.welcomeText}>
+            {isSignUp ? 'Create Your Account' : 'Welcome to CartonIQ'}
+          </Text>
 
-          {/* Login Form */}
-          <View style={styles.formContainer}>
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Login</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Email or phone number"
-                placeholderTextColor="#9ca3af"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+          {/* Conditional Render: Sign In or Sign Up Form */}
+          {!isSignUp ? (
+            // SIGN IN FORM
+            <View style={styles.formContainer}>
+              {/* Email Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Login</Text>
                 <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Enter password"
+                  style={styles.input}
+                  placeholder="Email or phone number"
                   placeholderTextColor="#9ca3af"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Text style={styles.eyeIconText}>
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </Text>
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Enter password"
+                    placeholderTextColor="#9ca3af"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <FontAwesome 
+                      name={showPassword ? 'eye' : 'eye-slash'} 
+                      size={18} 
+                      color="#6b7280" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Remember Me and Forgot Password */}
+              <View style={styles.optionsRow}>
+                <View style={styles.rememberMeContainer}>
+                  <TouchableOpacity
+                    onPress={() => setRememberMe(!rememberMe)}
+                    onPressIn={() => animateCheckbox(0.95)}
+                    onPressOut={() => animateCheckbox(1)}
+                    activeOpacity={0.8}
+                  >
+                    <Animated.View style={[styles.checkbox, rememberMe && styles.checkboxChecked, { transform: [{ scale: checkboxScale }] }] }>
+                      {rememberMe && <FontAwesome name="check" size={10} color="#fff" />}
+                    </Animated.View>
+                  </TouchableOpacity>
+                  <Text style={styles.rememberMeText}>Remember me</Text>
+                </View>
+                <TouchableOpacity>
+                  <Text style={styles.forgotPassword}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Remember Me and Forgot Password */}
-            <View style={styles.optionsRow}>
-              <View style={styles.rememberMeContainer}>
+              {/* Sign In Button */}
+              <TouchableOpacity onPress={handleSignIn} activeOpacity={0.8}>
+                <LinearGradient
+                  colors={['#F3E095', '#DACC96']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.signInButton}
+                >
+                  <Text style={styles.signInButtonText}>Sign in</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.divider} />
+
+              {/* Social icon-only buttons */}
+              <View style={styles.socialRow}>
                 <TouchableOpacity
-                  onPress={() => setRememberMe(!rememberMe)}
-                  onPressIn={() => animateCheckbox(0.95)}
-                  onPressOut={() => animateCheckbox(1)}
+                  style={[styles.socialIconButton, styles.googleButton]}
+                  onPress={handleGoogleSignIn}
                   activeOpacity={0.8}
+                  accessibilityLabel="Sign in with Google"
                 >
-                  <Animated.View style={[styles.checkbox, rememberMe && styles.checkboxChecked, { transform: [{ scale: checkboxScale }] }] }>
-                    {rememberMe && <FontAwesome name="check" size={10} color="#fff" />}
-                  </Animated.View>
+                  <FontAwesome name="google" size={18} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.rememberMeText}>Remember me</Text>
+
+                <TouchableOpacity
+                  style={[styles.socialIconButton, styles.facebookButton]}
+                  onPress={handleFacebookSignIn}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Sign in with Facebook"
+                >
+                  <FontAwesome name="facebook" size={18} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.socialIconButton}
+                  onPress={handleAppleSignIn}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Sign in with Apple"
+                >
+                  <FontAwesome name="apple" size={18} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.socialIconButton, styles.microsoftButton]}
+                  onPress={handleMicrosoftSignIn}
+                  activeOpacity={0.8}
+                  accessibilityLabel="Sign in with Microsoft"
+                >
+                  <FontAwesome name="windows" size={18} color="#fff" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity>
-                <Text style={styles.forgotPassword}>Forgot password?</Text>
-              </TouchableOpacity>
+
+              {/* Sign Up Link */}
+              <View style={styles.signUpContainer}>
+                <Text style={styles.signUpText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={toggleSignUp}>
+                  <Text style={styles.signUpLink}>Sign up now</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            {/* Sign In Button */}
-            <TouchableOpacity onPress={handleSignIn} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['#F3E095', '#DACC96']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.signInButton}
-              >
-                <Text style={styles.signInButtonText}>Sign in</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider} />
-
-            {/* Social icon-only buttons: Google, Facebook, Apple, Microsoft */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity
-                style={styles.socialIconButton}
-                onPress={handleGoogleSignIn}
-                activeOpacity={0.8}
-                accessibilityLabel="Sign in with Google"
-              >
-                <Image
-                  source={require('./assets/google-icon.png')}
-                  style={styles.googleIcon}
-                  contentFit="contain"
-                  transition={0}
+          ) : (
+            // SIGN UP FORM
+            <View style={styles.formContainer}>
+              {/* Full Name Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#9ca3af"
+                  value={signUpName}
+                  onChangeText={setSignUpName}
+                  autoCapitalize="words"
                 />
-              </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity
-                style={styles.socialIconButton}
-                onPress={handleFacebookSignIn}
-                activeOpacity={0.8}
-                accessibilityLabel="Sign in with Facebook"
-              >
-                <Image
-                  source={require('./assets/facebook-logo.png')}
-                  style={styles.socialLogo}
-                  contentFit="contain"
-                  transition={0}
+              {/* Email Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#9ca3af"
+                  value={signUpEmail}
+                  onChangeText={setSignUpEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                 />
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Create password"
+                    placeholderTextColor="#9ca3af"
+                    value={signUpPassword}
+                    onChangeText={setSignUpPassword}
+                    secureTextEntry={!showSignUpPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowSignUpPassword(!showSignUpPassword)}
+                  >
+                    <FontAwesome 
+                      name={showSignUpPassword ? 'eye' : 'eye-slash'} 
+                      size={18} 
+                      color="#6b7280" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Confirm your password"
+                    placeholderTextColor="#9ca3af"
+                    value={signUpConfirmPassword}
+                    onChangeText={setSignUpConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <FontAwesome 
+                      name={showConfirmPassword ? 'eye' : 'eye-slash'} 
+                      size={18} 
+                      color="#6b7280" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Sign Up Button */}
+              <TouchableOpacity onPress={handleSignUp} activeOpacity={0.8} style={{ marginTop: 8 }}>
+                <LinearGradient
+                  colors={['#F3E095', '#DACC96']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.signInButton}
+                >
+                  <Text style={styles.signInButtonText}>Create Account</Text>
+                </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.socialIconButton}
-                onPress={handleAppleSignIn}
-                activeOpacity={0.8}
-                accessibilityLabel="Sign in with Apple"
-              >
-                <FontAwesome name="apple" size={18} color="#fff" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.socialIconButton}
-                onPress={handleMicrosoftSignIn}
-                activeOpacity={0.8}
-                accessibilityLabel="Sign in with Microsoft"
-              >
-                <FontAwesome name="windows" size={18} color="#fff" />
-              </TouchableOpacity>
+              {/* Back to Sign In Link */}
+              <View style={styles.signUpContainer}>
+                <Text style={styles.signUpText}>Already have an account? </Text>
+                <TouchableOpacity onPress={toggleSignUp}>
+                  <Text style={styles.signUpLink}>Sign in</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            {/* Sign Up Link */}
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
-              <TouchableOpacity>
-                <Text style={styles.signUpLink}>Sign up now</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
         </View>
       </LinearGradient>
 
@@ -307,9 +473,6 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 12,
   },
-  eyeIconText: {
-    fontSize: 18,
-  },
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -334,11 +497,6 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: '#111827',
     borderColor: '#111827',
-  },
-  
-  switch: {
-    transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
-    marginRight: 4,
   },
   rememberMeText: {
     fontSize: 13,
@@ -365,20 +523,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#d1d5db',
     marginVertical: 16,
   },
-  googleButton: {
-    backgroundColor: '#374151',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  googleIcon: {
-    width: 28,
-    height: 28,
-    marginRight: 0,
-  },
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -396,15 +540,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 4,
   },
-  socialLogo: {
-    width: 20,
-    height: 20,
+  googleButton: {
+    backgroundColor: '#DB4437',
   },
-  googleButtonText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '500',
-    marginHorizontal: 4,
+  facebookButton: {
+    backgroundColor: '#1877F2',
+  },
+  microsoftButton: {
+    backgroundColor: '#00A4EF',
   },
   signUpContainer: {
     flexDirection: 'row',
@@ -420,5 +563,50 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#3b82f6',
     fontWeight: '600',
+  },
+  welcomeScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  welcomeContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  welcomeLogo: {
+    width: 100,
+    height: 100,
+    marginBottom: 24,
+  },
+  welcomeTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  welcomeSubtitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#4b5563',
+    marginBottom: 32,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#1f2937',
+    opacity: 0.3,
+  },
+  loadingDotDelay1: {
+    opacity: 0.6,
+  },
+  loadingDotDelay2: {
+    opacity: 0.9,
   },
 });
